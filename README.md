@@ -14,6 +14,22 @@ Ejercicios básicos
   `get_pitch`.
 
    * Complete el cálculo de la autocorrelación e inserte a continuación el código correspondiente.
+     ```c++
+     
+     void PitchAnalyzer::autocorrelation(const vector<float> &x, vector<float> &r) const {
+
+    	for (unsigned int l = 0; l < r.size(); ++l) {
+      	r[l]=0;
+      		for (unsigned int n=l; n<x.size(); n++) {
+          			r[l] += x[n-l]*x[n];
+      		}
+   	    }
+
+    	if (r[0] == 0.0F) //to avoid log() and divide zero 
+      		r[0] = 1e-10; 
+     }
+
+     ```
 
    * Inserte una gŕafica donde, en un *subplot*, se vea con claridad la señal temporal de un segmento de
      unos 30 ms de un fonema sonoro y su periodo de pitch; y, en otro *subplot*, se vea con claridad la
@@ -21,11 +37,34 @@ Ejercicios básicos
 
 	 NOTA: es más que probable que tenga que usar Python, Octave/MATLAB u otro programa semejante para
 	 hacerlo. Se valorará la utilización de la librería matplotlib de Python.
+![Plots Python](https://github.com/ikergf/P3/blob/master/IMG_P3/Gr%C3%A1ficas.PNG)
 
    * Determine el mejor candidato para el periodo de pitch localizando el primer máximo secundario de la
      autocorrelación. Inserte a continuación el código correspondiente.
+     
+     ```c++
+     
+     for(iR = r.begin() + npitch_min; iR < r.begin()+npitch_max; iR++){  
+     	if(*iR > *iRMax){ 
+				iRMax = iR; //Vamos iterando y, si el valor de iR es mayor a iRMax, entonces iRMax pasará a valer iR. De esta forma, encontraremos el primer máximo secundario de la autocorrelación 
+	 	} 
+     } 
+     unsigned int lag = iRMax - r.begin(); //El lag será la distancia entre el valor máximo secundario (iRMax) y el máximo total de la autocorrelación (en r[0])
+     
+     ```
 
    * Implemente la regla de decisión sonoro o sordo e inserte el código correspondiente.
+     ```c++
+     
+       bool PitchAnalyzer::unvoiced(float pot, float r1norm, float rmaxnorm) const {
+    		if(rmaxnorm > 0.5 && r1norm > 0.81 && pot > -16){
+      		return false;
+    		}else{
+      		return true;
+    		}
+  	   }
+     
+     ```
 
 - Una vez completados los puntos anteriores, dispondrá de una primera versión del detector de pitch. El 
   resto del trabajo consiste, básicamente, en obtener las mejores prestaciones posibles con él.
@@ -42,10 +81,15 @@ Ejercicios básicos
 
 	    Recuerde configurar los paneles de datos para que el desplazamiento de ventana sea el adecuado, que
 		en esta práctica es de 15 ms.
+	![Wavesurfer](https://github.com/ikergf/P3/blob/master/IMG_P3/Wavesurfer_2.PNG)
 
       - Use el detector de pitch implementado en el programa `wavesurfer` en una señal de prueba y compare
 	    su resultado con el obtenido por la mejor versión de su propio sistema.  Inserte una gráfica
 		ilustrativa del resultado de ambos detectores.
+	![Comparación](https://github.com/ikergf/P3/blob/master/IMG_P3/Comparaci%C3%B3n_pitch.PNG)
+	*Los puntos azules corresponden con nuestro detector y los naranjas al detector implementado en wavesurfer.*
+	
+	**Como se puede observar, los resultados obtenidos en la detección de pitch de nuestro programa y del detector de wavesurfer son muy similares, por lo que se puede decir que el código creado está bien implementado. Aún así, se podría destacar los 4 puntos azules que hay alrededor de la frecuencia de 500Hz, los cuales seguramente serán reconocidos como Gross pitch errors.**
   
   * Optimice los parámetros de su sistema de detección de pitch e inserte una tabla con las tasas de error
     y el *score* TOTAL proporcionados por `pitch_evaluate` en la evaluación de la base de datos 
