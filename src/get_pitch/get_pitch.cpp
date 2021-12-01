@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string.h>
 #include <errno.h>
+#include <math.h>
 
 #include "wavfile_mono.h"
 #include "pitch_analyzer.h"
@@ -15,6 +16,12 @@
 
 using namespace std;
 using namespace upc;
+
+FILE *data=fopen("data.txt","w");
+int llindar = 0.008087158203125; 
+float mediana[3];
+float aux;
+
 
 static const char USAGE[] = R"(
 get_pitch - Pitch Detector 
@@ -64,6 +71,21 @@ int main(int argc, const char *argv[]) {
   /// \TODO
   /// Preprocess the input signal in order to ease pitch estimation. For instance,
   /// central-clipping or low pass filtering may be used.
+
+  /// \DONE Preprocesado usando central-clipping.
+
+for(unsigned int i=0; i<x.size(); i++){
+  if(abs(x[i])<llindar){
+      x[i]=0;
+  } 
+  else if (x[i]>=llindar){
+      x[i]=x[i]-llindar;
+  } 
+  else {
+      x[i]=x[i]+llindar;
+  }
+
+}
   
   // Iterate for each frame and save values in f0 vector
   vector<float>::iterator iX;
@@ -77,6 +99,37 @@ int main(int argc, const char *argv[]) {
   /// Postprocess the estimation in order to supress errors. For instance, a median filter
   /// or time-warping may be used.
 
+  /// \DONE Postprocesado usando un filtro de mediana
+
+for (unsigned int i=0; i<f0.size(); i++){
+  
+    for (int j=-1; j<=1; j++){
+      if(i>0 && i<(f0.size())){
+        mediana[j+1]=f0[j+i];
+      } else if(i==0){
+        mediana[0]=0;
+        mediana[1]=f0[0];
+        mediana[2]=f0[1];
+      } else if(i==f0.size()){
+        mediana[0]=f0[f0.size()-1];
+        mediana[1]=f0[f0.size()];
+        mediana[2]=0;
+      }
+    }
+    for (int m=0; m<3-1; m++){
+      for (int n=m+1; n<3; n++){
+        if(mediana[m]>mediana[n]){
+          aux = mediana[n];
+          mediana[n] = mediana[m];
+          mediana[m] = aux;
+        }
+      }
+    }
+    f0[i]=mediana[1];
+  
+}
+
+
   // Write f0 contour into the output file
   ofstream os(output_txt);
   if (!os.good()) {
@@ -88,6 +141,7 @@ int main(int argc, const char *argv[]) {
   for (iX = f0.begin(); iX != f0.end(); ++iX) 
     os << *iX << '\n';
   os << 0 << '\n';//pitch at t=Dur
+
 
   return 0;
 }
